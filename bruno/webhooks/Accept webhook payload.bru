@@ -1,0 +1,18 @@
+meta {
+  name: Accept webhook payload
+  type: http
+  seq: 2
+  tags: [
+    webhooks
+  ]
+}
+
+post {
+  url: {{baseUrl}}/webhooks/meta
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {}
+}

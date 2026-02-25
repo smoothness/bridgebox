@@ -11,11 +11,17 @@
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
-		"format": "biome format --write ."
+		"format": "biome format --write .",
+		"api:lint": "npx --yes @redocly/cli@latest lint openapi/openapi.yaml",
+		"api:docs:preview": "npx --yes redoc-cli serve openapi/openapi.yaml",
+		"api:docs:build": "npx --yes @redocly/cli@latest build-docs openapi/openapi.yaml --output docs/api/index.html",
+		"api:bruno:generate": "pnpm exec bru import openapi --source openapi/openapi.yaml --output bruno --collection-name bridgebox-api --group-by tags",
+		"api:bruno:run": "bash -lc 'cd bruno && ../node_modules/.bin/bru run -r --env \"AWS API Gateway\"'"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.4",
 		"@tsconfig/node18": "^18.2.6",
+		"@usebruno/cli": "^3.1.3",
 		"constructs": "10.1.156",
 		"sst": "2.49.6",
 		"typescript": "^5.9.3"

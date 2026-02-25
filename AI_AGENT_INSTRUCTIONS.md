@@ -50,6 +50,7 @@ This document provides instructions for any AI agent working on this project. Pl
 - **Error Handling:** Implement a Dead Letter Queue (DLQ) for the SQS queue.
 - **Statelessness:** Ensure all Lambda functions are stateless. Use DynamoDB for all persistence.
 - **Package Manager:** Always use pnpm for package management.
+- Use pnpm for all dependency management and scripts in this repository.
 
 ## 6. Agent Collaboration Rules
 

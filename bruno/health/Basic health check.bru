@@ -1,0 +1,14 @@
+meta {
+  name: Basic health check
+  type: http
+  seq: 1
+  tags: [
+    health
+  ]
+}
+
+get {
+  url: {{baseUrl}}/
+  body: none
+  auth: inherit
+}

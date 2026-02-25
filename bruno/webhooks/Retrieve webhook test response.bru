@@ -1,0 +1,14 @@
+meta {
+  name: Retrieve webhook test response
+  type: http
+  seq: 1
+  tags: [
+    webhooks
+  ]
+}
+
+get {
+  url: {{baseUrl}}/webhooks/meta
+  body: none
+  auth: inherit
+}

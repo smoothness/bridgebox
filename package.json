@@ -1,0 +1,26 @@
+{
+	"name": "bridgebox",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "sst dev",
+		"deploy": "sst deploy",
+		"remove": "sst remove",
+		"console": "sst console",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.4",
+		"@tsconfig/node18": "^18.2.6",
+		"constructs": "10.1.156",
+		"sst": "2.49.6",
+		"typescript": "^5.9.3"
+	},
+	"workspaces": [
+		"packages/*"
+	]
+}

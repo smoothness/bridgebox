@@ -1,0 +1,15 @@
+{
+	"name": "@bridgebox/functions",
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"test": "sst bind vitest",
+		"typecheck": "tsc -noEmit"
+	},
+	"devDependencies": {
+		"@types/node": "^25.3.0",
+		"@types/aws-lambda": "^8.10.160",
+		"vitest": "^4.0.18",
+		"sst": "2.49.6"
+	}
+}

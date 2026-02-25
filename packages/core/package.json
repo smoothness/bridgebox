@@ -1,0 +1,17 @@
+{
+	"name": "@bridgebox/core",
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"test": "sst bind vitest",
+		"typecheck": "tsc -noEmit"
+	},
+	"devDependencies": {
+		"vitest": "^4.0.18",
+		"@types/node": "^25.3.0",
+		"sst": "2.49.6"
+	},
+	"dependencies": {
+		"zod": "^4.3.6"
+	}
+}

@@ -57,3 +57,14 @@ This document provides instructions for any AI agent working on this project. Pl
 - **Work file-by-file only:** Never modify more than one file per step.
 - **Explain every change:** After each file modification, explain every change in detail.
 - **Wait for approval:** Wait for approval before continuing to the next step.
+
+## 7. Infrastructure Change Checklist (Docs + Tests)
+
+Whenever new infrastructure is added or existing infrastructure is changed, the AI agent must also update API documentation and API tests using this workflow:
+
+1. Update `openapi/openapi.yaml`.
+2. Run `pnpm run api:bruno:generate`.
+3. Adjust environment `baseUrl` in `bruno/environments/AWS API Gateway.bru`.
+4. Run `pnpm run api:bruno:run`.
+
+Do not consider an infrastructure task complete until this checklist has been executed.

@@ -16,3 +16,6 @@ node_modules
 
 # generated api docs
 docs/api
+
+# generated postman collection / here because it has secrets in it
+postman/

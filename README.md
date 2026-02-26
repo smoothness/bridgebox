@@ -56,7 +56,7 @@ bridgebox/
 
 ### ✅ Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm
 - AWS CLI configured with the `bridgebox-dev` profile
 - SST CLI (`pnpm add -g sst`)
@@ -151,7 +151,7 @@ pnpm format
 
 ## 🛠️ Tech Stack
 
-- **Runtime:** Node.js 18 / TypeScript
+- **Runtime:** Node.js 20 / TypeScript
 - **IaC:** SST v2 + AWS CDK
 - **Database:** DynamoDB (Single Table Design)
 - **Validation:** Zod

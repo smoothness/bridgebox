@@ -40,18 +40,42 @@ paths:
   /webhooks/meta:
     get:
       tags: [webhooks]
-      operationId: getMetaWebhook
-      summary: Retrieve webhook test response
+      operationId: getMetaWebhookVerify
+      summary: Meta webhook verification challenge
+      description: |
+        Called by Meta when a new webhook subscription is registered.
+        Returns the hub.challenge value if hub.mode is "subscribe" and
+        hub.verify_token matches the configured server token.
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [subscribe]
+          description: Must be "subscribe" for Meta verification requests.
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Token set in the Meta developer portal, matched against WEBHOOK_VERIFY_TOKEN.
+        - name: hub.challenge
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Random string from Meta that must be echoed back on success.
       responses:
         "200":
-          description: Successful response.
+          description: Verification successful. Returns the hub.challenge value.
           content:
             text/plain:
               schema:
                 type: string
-                example: Hello world
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                example: "1158201444"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       tags: [webhooks]
       operationId: postMetaWebhook
@@ -76,6 +100,12 @@ components:
   responses:
     BadRequest:
       description: Request could not be processed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden. Verification token is missing or does not match.
       content:
         application/json:
           schema:

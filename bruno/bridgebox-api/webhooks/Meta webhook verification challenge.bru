@@ -1,0 +1,25 @@
+meta {
+  name: Meta webhook verification challenge
+  type: http
+  seq: 1
+  tags: [
+    webhooks
+  ]
+}
+
+get {
+  url: {{baseUrl}}/webhooks/meta
+  body: none
+  auth: inherit
+}
+
+params:query {
+  hub.mode: subscribe
+  hub.verify_token: {{webhookVerifyToken}}
+  hub.challenge: test-challenge-1234
+}
+
+assert {
+  res.status: eq 200
+  res.body: eq test-challenge-1234
+}

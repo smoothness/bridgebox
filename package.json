@@ -16,7 +16,7 @@
 		"api:docs:preview": "npx --yes redoc-cli serve openapi/openapi.yaml",
 		"api:docs:build": "npx --yes @redocly/cli@latest build-docs openapi/openapi.yaml --output docs/api/index.html",
 		"api:bruno:generate": "pnpm exec bru import openapi --source openapi/openapi.yaml --output bruno --collection-name bridgebox-api --group-by tags",
-		"api:bruno:run": "bash -lc 'cd bruno && ../node_modules/.bin/bru run -r --env \"AWS API Gateway\"'"
+"api:bruno:run": "bash -lc 'cd bruno/bridgebox-api && ../../node_modules/.bin/bru run -r --env \"AWS API Gateway\"'"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.4",

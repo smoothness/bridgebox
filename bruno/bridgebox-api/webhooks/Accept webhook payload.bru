@@ -1,0 +1,26 @@
+meta {
+  name: Accept webhook payload
+  type: http
+  seq: 2
+  tags: [
+    webhooks
+  ]
+}
+
+post {
+  url: {{baseUrl}}/webhooks/meta
+  body: json
+  auth: inherit
+}
+
+headers {
+  x-hub-signature-256: 
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 401
+}

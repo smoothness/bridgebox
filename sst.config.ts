@@ -9,6 +9,8 @@ function ApiStack({ stack }: StackContext) {
 				environment: {
 					// Token configured in Meta's developer portal for webhook verification
 					WEBHOOK_VERIFY_TOKEN: process.env.WEBHOOK_VERIFY_TOKEN ?? '',
+					// App Secret from Meta's developer portal — used to validate x-hub-signature-256
+					META_APP_SECRET: process.env.META_APP_SECRET ?? '',
 				},
 			},
 		},

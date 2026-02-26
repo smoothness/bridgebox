@@ -3,6 +3,7 @@ import type {
 	APIGatewayProxyHandlerV2,
 	APIGatewayProxyResultV2,
 } from 'aws-lambda'
+import { isValidMetaSignature } from '@bridgebox/core/meta'
 import { z } from 'zod'
 
 /**
@@ -24,9 +25,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (
 		return handleVerifyChallenge(event)
 	}
 
+	if (method === 'POST') {
+		return handleWebhookPayload(event)
+	}
+
 	return {
-		statusCode: 200,
-		body: 'Hello world',
+		statusCode: 405,
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ message: 'Method not allowed' }),
 	}
 }
 
@@ -66,5 +72,32 @@ function handleVerifyChallenge(
 	return {
 		statusCode: 200,
 		body: challenge,
+	}
+}
+
+/**
+ * Handles incoming webhook event payloads from Meta (POST).
+ * Validates the x-hub-signature-256 header before processing.
+ * Ref: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#event-notifications
+ */
+function handleWebhookPayload(
+	event: APIGatewayProxyEventV2,
+): APIGatewayProxyResultV2 {
+	const signature = event.headers['x-hub-signature-256'] ?? ''
+	const rawBody = event.body ?? ''
+	const appSecret = process.env.META_APP_SECRET ?? ''
+
+	if (!isValidMetaSignature(rawBody, signature, appSecret)) {
+		return {
+			statusCode: 401,
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ message: 'Unauthorized: invalid signature' }),
+		}
+	}
+
+	return {
+		statusCode: 200,
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ message: 'OK' }),
 	}
 }

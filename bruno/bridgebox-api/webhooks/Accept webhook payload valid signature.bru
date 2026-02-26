@@ -1,0 +1,34 @@
+meta {
+  name: Accept webhook payload (valid signature)
+  type: http
+  seq: 3
+  tags: [
+    webhooks
+  ]
+}
+
+post {
+  url: {{baseUrl}}/webhooks/meta
+  body: json
+  auth: inherit
+}
+
+headers {
+  x-hub-signature-256: {{computedSignature}}
+}
+
+body:json {
+  {}
+}
+
+script:pre-request {
+  const crypto = require("crypto");
+  const body = "{}";
+  const secret = bru.getEnvVar("metaAppSecret");
+  const signature = "sha256=" + crypto.createHmac("sha256", secret).update(body).digest("hex");
+  bru.setVar("computedSignature", signature);
+}
+
+assert {
+  res.status: eq 200
+}

@@ -19,3 +19,6 @@ docs/api
 
 # generated postman collection / here because it has secrets in it
 postman/
+
+# local env file
+.env

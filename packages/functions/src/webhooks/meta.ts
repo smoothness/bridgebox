@@ -3,8 +3,11 @@ import type {
 	APIGatewayProxyHandlerV2,
 	APIGatewayProxyResultV2,
 } from 'aws-lambda'
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
 import { isValidMetaSignature } from '@bridgebox/core/meta'
 import { z } from 'zod'
+
+const sqsClient = new SQSClient({})
 
 /**
  * Zod schema for Meta's webhook verification GET request query parameters.
@@ -77,12 +80,13 @@ function handleVerifyChallenge(
 
 /**
  * Handles incoming webhook event payloads from Meta (POST).
- * Validates the x-hub-signature-256 header before processing.
+ * Validates the x-hub-signature-256 header then immediately enqueues
+ * the raw payload to SQS for async processing.
  * Ref: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#event-notifications
  */
-function handleWebhookPayload(
+async function handleWebhookPayload(
 	event: APIGatewayProxyEventV2,
-): APIGatewayProxyResultV2 {
+): Promise<APIGatewayProxyResultV2> {
 	const signature = event.headers['x-hub-signature-256'] ?? ''
 	const rawBody = event.body ?? ''
 	const appSecret = process.env.META_APP_SECRET ?? ''
@@ -94,6 +98,13 @@ function handleWebhookPayload(
 			body: JSON.stringify({ message: 'Unauthorized: invalid signature' }),
 		}
 	}
+
+	await sqsClient.send(
+		new SendMessageCommand({
+			QueueUrl: process.env.INCOMING_MESSAGES_QUEUE_URL,
+			MessageBody: rawBody,
+		}),
+	)
 
 	return {
 		statusCode: 200,

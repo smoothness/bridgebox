@@ -22,10 +22,10 @@ body:json {
 }
 
 script:pre-request {
-  const crypto = require("crypto");
-  const body = "{}";
+  const CryptoJS = require("crypto-js");
+  const body = req.getBody();
   const secret = bru.getEnvVar("metaAppSecret");
-  const signature = "sha256=" + crypto.createHmac("sha256", secret).update(body).digest("hex");
+  const signature = "sha256=" + CryptoJS.HmacSHA256(body, secret).toString();
   bru.setVar("computedSignature", signature);
 }
 

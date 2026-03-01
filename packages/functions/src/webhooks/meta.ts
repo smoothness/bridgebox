@@ -1,10 +1,10 @@
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
+import { isValidMetaSignature } from '@bridgebox/core/meta'
 import type {
 	APIGatewayProxyEventV2,
 	APIGatewayProxyHandlerV2,
 	APIGatewayProxyResultV2,
 } from 'aws-lambda'
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
-import { isValidMetaSignature } from '@bridgebox/core/meta'
 import { z } from 'zod'
 
 const sqsClient = new SQSClient({})

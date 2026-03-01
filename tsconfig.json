@@ -4,6 +4,9 @@
 	"compilerOptions": {
 		"module": "esnext",
 		"moduleResolution": "node",
-		"types": ["node"]
+		"types": ["node"],
+		// Required for .ts extension imports in scripts/ (tsx resolves them at runtime)
+		"allowImportingTsExtensions": true,
+		"noEmit": true
 	}
 }

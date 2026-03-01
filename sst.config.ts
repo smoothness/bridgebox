@@ -1,6 +1,6 @@
 import type { SSTConfig } from 'sst'
 import type { StackContext } from 'sst/constructs'
-import { Api, Queue } from 'sst/constructs'
+import { Api, Queue, Table } from 'sst/constructs'
 
 function ApiStack({ stack }: StackContext) {
 	// Dead Letter Queue — receives messages that fail processing 3 times
@@ -14,6 +14,39 @@ function ApiStack({ stack }: StackContext) {
 					queue: dlq.cdk.queue,
 					maxReceiveCount: 3,
 				},
+			},
+		},
+	})
+
+	// Single-table DynamoDB for all CRM data (Tenants, Contacts, Messages)
+	const table = new Table(stack, 'SocialCRMTable', {
+		fields: {
+			pk: 'string',
+			sk: 'string',
+			// GSI key — platform-specific account ID (page ID, WABA_ID, TikTok user ID, etc.)
+			platformAccountId: 'string',
+		},
+		primaryIndex: { partitionKey: 'pk', sortKey: 'sk' },
+		globalIndexes: {
+			// Resolves which Tenant owns the account that received an inbound message
+			ByPlatformAccountId: { partitionKey: 'platformAccountId' },
+		},
+	})
+
+	// Processes messages from the ingestion queue, resolves tenant, upserts contact, saves message
+	incomingMessagesQueue.addConsumer(stack, {
+		function: {
+			handler: 'packages/functions/src/processors/message.handler',
+			environment: {
+				SOCIAL_CRM_TABLE_NAME: table.tableName,
+			},
+			permissions: [table],
+		},
+		cdk: {
+			eventSource: {
+				// Only failed records are retried — healthy records are not reprocessed
+				reportBatchItemFailures: true,
+				batchSize: 10,
 			},
 		},
 	})
@@ -45,6 +78,7 @@ function ApiStack({ stack }: StackContext) {
 		ApiEndpoint: api.url,
 		IncomingMessagesQueueUrl: incomingMessagesQueue.queueUrl,
 		DeadLetterQueueUrl: dlq.queueUrl,
+		SocialCRMTableName: table.tableName,
 	})
 }
 

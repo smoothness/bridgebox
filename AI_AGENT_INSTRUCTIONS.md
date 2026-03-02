@@ -52,6 +52,39 @@ This document provides instructions for any AI agent working on this project. Pl
 - **Package Manager:** Always use pnpm for package management.
 - Use pnpm for all dependency management and scripts in this repository.
 
+## 5.1 DynamoDB Access Patterns (Mandatory)
+
+These rules are mandatory for all agents and all future channels (Instagram/Facebook/WhatsApp/TikTok/LinkedIn/etc.).
+
+### Required
+- Every DynamoDB read/write must be tied to a documented access pattern before implementation.
+- Every access pattern must use one of:
+  - `GetItem` by full primary key (`pk` + `sk`)
+  - `Query` by table partition key
+  - `Query` by a defined GSI partition key
+- If a new query cannot be expressed with existing keys/indexes, agents must propose a new index/key design first.
+- For high-volume event entities (messages), sort keys must remain time-sortable (for chronological pagination and bounded queries).
+
+### Forbidden (without explicit user approval)
+- Table `Scan` operations in runtime code.
+- “Ad-hoc” reads on non-indexed attributes (including broad `FilterExpression` usage to emulate SQL WHERE scans).
+- New features that rely on full-table traversal for normal request paths.
+
+### Hot Partition Guardrails
+- Do not design keys that route most traffic to one partition key value.
+- Keep partition keys high-cardinality for high-ingest workloads.
+- When a single partition key may receive very high sustained writes, agents must propose one of:
+  - write sharding (suffix/bucket strategy), or
+  - time-bucketed partitioning for append-heavy entities.
+- For any new high-throughput path, agents must explicitly state expected read/write key distribution.
+
+### PR / Change Checklist (DynamoDB-impacting changes)
+- List the exact access pattern(s) introduced or changed.
+- Name the key/index used by each pattern.
+- Confirm no `Scan` was introduced.
+- Confirm no non-indexed ad-hoc query was introduced.
+- Call out any hotspot risk and mitigation.
+
 ## 6. Agent Collaboration Rules
 
 - **Work file-by-file only:** Never modify more than one file per step.

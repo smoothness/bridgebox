@@ -1,6 +1,9 @@
 import {
+	getOrCreateAccountContact,
 	getOrCreateContact,
+	getRoutingContextByPlatformAccountId,
 	getTenantByPlatformAccountId,
+	saveAccountMessage,
 	saveMessage,
 } from '@bridgebox/core/dynamo'
 import { MetaSocialWebhookSchema } from '@bridgebox/core/meta'
@@ -54,9 +57,14 @@ export const handler: SQSHandler = async (event): Promise<SQSBatchResponse> => {
 			// ── 2. Resolve tenant ─────────────────────────────────────────────
 			// entry[0].id is the Instagram/Facebook Page ID that received the DM
 			const platformAccountId = entry[0].id
-			const tenant = await getTenantByPlatformAccountId(platformAccountId)
+			const routing =
+				await getRoutingContextByPlatformAccountId(platformAccountId)
+			// Temporary fallback for safety while Phase 3.5 rolls out
+			const legacyTenant = routing
+				? undefined
+				: await getTenantByPlatformAccountId(platformAccountId)
 
-			if (!tenant) {
+			if (!routing && !legacyTenant) {
 				// No tenant has registered this platform account. Skip — not retryable.
 				console.warn(
 					`No tenant found for platformAccountId=${platformAccountId}. Skipping record ${record.messageId}.`,
@@ -75,17 +83,43 @@ export const handler: SQSHandler = async (event): Promise<SQSBatchResponse> => {
 						continue
 					}
 
-					await getOrCreateContact(tenant.tenantId, msg.sender.id, channel)
-					await saveMessage(tenant.tenantId, msg.sender.id, {
-						body: msg.message.text,
-						channel,
-						externalMessageId: msg.message.mid,
-						timestamp: msg.timestamp,
-					})
-
-					console.info(
-						`Saved message mid=${msg.message.mid} sender=${msg.sender.id} tenant=${tenant.tenantId} channel=${channel}`,
-					)
+					if (routing) {
+						await getOrCreateAccountContact(
+							routing.tenantId,
+							routing.accountId,
+							msg.sender.id,
+							channel,
+						)
+						await saveAccountMessage(
+							routing.tenantId,
+							routing.accountId,
+							msg.sender.id,
+							{
+								body: msg.message.text,
+								channel,
+								externalMessageId: msg.message.mid,
+								timestamp: msg.timestamp,
+							},
+						)
+						console.info(
+							`Saved message mid=${msg.message.mid} sender=${msg.sender.id} tenant=${routing.tenantId} account=${routing.accountId} mode=${routing.mode} channel=${channel}`,
+						)
+					} else if (legacyTenant) {
+						await getOrCreateContact(
+							legacyTenant.tenantId,
+							msg.sender.id,
+							channel,
+						)
+						await saveMessage(legacyTenant.tenantId, msg.sender.id, {
+							body: msg.message.text,
+							channel,
+							externalMessageId: msg.message.mid,
+							timestamp: msg.timestamp,
+						})
+						console.info(
+							`Saved message mid=${msg.message.mid} sender=${msg.sender.id} tenant=${legacyTenant.tenantId} mode=legacy channel=${channel}`,
+						)
+					}
 				}
 			}
 		} catch (err) {

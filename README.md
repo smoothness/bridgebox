@@ -1,17 +1,17 @@
 # 📦 Bridgebox
 
-A multi-tenant SaaS Social CRM built on AWS Serverless. Bridgebox unifies inbound messages from **WhatsApp Business** and **Instagram** into a single platform, enabling businesses to manage customer conversations at scale.
+A multi-tenant SaaS Social CRM built on AWS Serverless. Bridgebox currently processes inbound messages from **Instagram** and **Facebook** webhooks, with a model designed to extend to additional channels.
 
 ## 🗺️ Overview
 
-- 🏢 **Multi-tenancy:** Pooled isolation using a Single Table Design in DynamoDB (`tenantId` as Partition Key).
+- 🏢 **Multi-tenancy:** Pooled isolation using a single DynamoDB table with hierarchical key patterns.
 - ☁️ **Infrastructure as Code:** Deployed with [SST v2](https://v2.sst.dev) on AWS (`us-east-2`).
 - 📦 **Monorepo:** Managed with `pnpm` workspaces.
 
 ## 🏗️ Architecture
 
 ```
-Meta (WhatsApp / Instagram)
+Meta (Instagram / Facebook)
         │
         ▼
   API Gateway (REST)
@@ -20,7 +20,7 @@ Meta (WhatsApp / Instagram)
         │
       SQS (IncomingMessagesQueue)
         │
-  MessageProcessor (Lambda) ──saves to DynamoDB
+  MessageProcessor (Lambda) ──resolves tenant/account + saves to DynamoDB
         │
   DynamoDB (SocialCRMTable)  ──Single Table Design
 ```
@@ -31,10 +31,9 @@ Meta (WhatsApp / Instagram)
 |---|---|
 | API Gateway | Single regional REST API |
 | Lambda – WebhookReceiver | Validates Meta `x-hub-signature-256` and enqueues messages |
-| Lambda – MessageProcessor | Consumes SQS, resolves tenant/customer, persists messages |
-| Lambda – AuthService | Manages API keys and tenant JWTs |
+| Lambda – MessageProcessor | Consumes SQS, resolves tenant/account routing context, persists contacts/messages |
 | SQS + DLQ | Async decoupling and error handling for failed messages |
-| DynamoDB | Single-table store for tenants, customers, and messages |
+| DynamoDB | Single-table store for tenants, accounts, contacts, and messages |
 
 ## 📁 Project Structure
 
@@ -44,7 +43,7 @@ bridgebox/
 │   ├── functions/        # Lambda handlers
 │   │   └── src/
 │   │       ├── webhooks/ # Meta webhook receiver
-│   │       └── events/   # SQS event processors
+│   │       └── processors/ # SQS event processors
 │   └── core/             # Shared utilities (DynamoDB helpers, Meta API wrappers)
 ├── openapi/              # OpenAPI specification
 ├── bruno/                # Bruno API collection
@@ -95,7 +94,6 @@ pnpm remove
 |---|---|---|
 | GET | `/webhooks/meta` | Meta webhook verification challenge |
 | POST | `/webhooks/meta` | Receive inbound messages from Meta |
-| POST | `/send-message` | Send a message via WhatsApp or Instagram |
 
 ### 📖 API Docs
 
@@ -145,9 +143,10 @@ pnpm format
 
 | Entity | PK | SK | Key Attributes |
 |---|---|---|---|
-| Tenant | `TENANT#<id>` | `METADATA` | `plan`, `name`, `metaAccessToken` |
-| Customer | `TENANT#<id>` | `CUSTOMER#<phone\|ig_handle>` | `name`, `lastChannel` |
-| Message | `TENANT#<id>#CUST#<id>` | `MSG#<timestamp>` | `body`, `channel` (WA/IG), `status` |
+| Tenant | `TENANT#<tenantId>` | `METADATA` | `plan`, `name`, `platformAccountId`, `accessToken` |
+| Account | `TENANT#<tenantId>` | `ACCOUNT#<accountId>` | `platformAccountId`, `channel`, `displayName` |
+| Contact | `TENANT#<tenantId>#ACCOUNT#<accountId>` | `CONTACT#<senderId>` | `name`, `lastChannel` |
+| Message | `TENANT#<tenantId>#ACCOUNT#<accountId>#CONTACT#<senderId>` | `MSG#<isoTimestamp>#<externalMessageId>` | `body`, `channel`, `status`, `externalMessageId` |
 
 ## 🛠️ Tech Stack
 

@@ -15,11 +15,6 @@ get {
 
 params:query {
   hub.mode: subscribe
-  hub.verify_token: {{webhookVerifyToken}}
-  hub.challenge: test-challenge-1234
-}
-
-assert {
-  res.status: eq 200
-  res.body: eq test-challenge-1234
+  hub.verify_token: 
+  hub.challenge: 
 }

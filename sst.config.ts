@@ -59,6 +59,8 @@ function ApiStack({ stack }: StackContext) {
 					WEBHOOK_VERIFY_TOKEN: process.env.WEBHOOK_VERIFY_TOKEN ?? '',
 					// App Secret from Meta's developer portal — used to validate x-hub-signature-256
 					META_APP_SECRET: process.env.META_APP_SECRET ?? '',
+					// Optional app-level auth for outbound /send-message endpoint
+					SEND_MESSAGE_API_KEY: process.env.SEND_MESSAGE_API_KEY ?? '',
 					// SQS queue URL for async message processing
 					INCOMING_MESSAGES_QUEUE_URL: incomingMessagesQueue.queueUrl,
 					// DynamoDB table for resolving account/tenant context in send-message

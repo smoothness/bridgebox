@@ -13,9 +13,9 @@ import type { SQSBatchResponse, SQSHandler } from 'aws-lambda'
  *   1. Parse the body against the shared Instagram/Facebook Zod schema.
  *      Non-messaging events (reads, deliveries, comments) pass validation but
  *      have no `message` field — they are skipped without failure.
- *   2. Resolve the Tenant by the platform account ID (entry[0].id). If no
- *      tenant is registered for that account, the record is skipped (not
- *      retried — retrying a payload without a tenant will never succeed).
+ *   2. Resolve Account routing context by the platform account ID (entry[0].id).
+ *      If no account is registered for that ID, the record is skipped (not
+ *      retried — retrying a payload without an account mapping will never succeed).
  *   3. Upsert the Contact and persist the Message to DynamoDB.
  *
  * Only records that fail due to transient errors (e.g. DynamoDB timeouts) are
@@ -51,15 +51,15 @@ export const handler: SQSHandler = async (event): Promise<SQSBatchResponse> => {
 			const { object, entry } = parsed.data
 			const channel = object === 'instagram' ? 'instagram' : 'facebook'
 
-			// ── 2. Resolve tenant ─────────────────────────────────────────────
+			// ── 2. Resolve account routing ───────────────────────────────────
 			// entry[0].id is the Instagram/Facebook Page ID that received the DM
 			const platformAccountId = entry[0].id
 			const routing = await getRoutingContextByPlatformAccountId(platformAccountId)
 
 			if (!routing) {
-				// No tenant has registered this platform account. Skip — not retryable.
+				// No account has registered this platform account. Skip — not retryable.
 				console.warn(
-					`No tenant found for platformAccountId=${platformAccountId}. Skipping record ${record.messageId}.`,
+					`No account found for platformAccountId=${platformAccountId}. Skipping record ${record.messageId}.`,
 				)
 				continue
 			}

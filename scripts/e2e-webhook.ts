@@ -5,6 +5,7 @@ import { putAccount, putTenant } from '../packages/core/src/dynamo.ts'
 const tableName = process.env.SOCIAL_CRM_TABLE_NAME
 const apiEndpoint = process.env.API_ENDPOINT
 const appSecret = process.env.META_APP_SECRET
+const sendMessageApiKey = process.env.SEND_MESSAGE_API_KEY
 
 if (!tableName) throw new Error('SOCIAL_CRM_TABLE_NAME is required')
 if (!apiEndpoint) throw new Error('API_ENDPOINT is required')
@@ -13,11 +14,24 @@ const appSecretValue = appSecret
 
 const runId = Date.now().toString()
 
-const tenantOnly = {
-	tenantId: 'e2e-tenant-only-001',
-	platformAccountId: `PAGE_E2E_TENANT_${runId}`,
-	senderId: 'SENDER_E2E_TENANT_001',
-	mid: `m_e2e_tenant_${runId}`,
+
+async function postSendMessage(
+	body: unknown,
+	apiKey?: string,
+): Promise<{ status: number; json: unknown }> {
+	const headers: Record<string, string> = {
+		'content-type': 'application/json',
+	}
+	if (apiKey) headers['x-api-key'] = apiKey
+
+	const res = await fetch(`${apiEndpoint}/send-message`, {
+		method: 'POST',
+		headers,
+		body: JSON.stringify(body),
+	})
+
+	const json = (await res.json().catch(() => ({}))) as unknown
+	return { status: res.status, json }
 }
 
 const accountMode = {
@@ -76,18 +90,10 @@ function assert(cond: boolean, msg: string) {
 }
 
 async function seed() {
-	await putTenant({
-		tenantId: tenantOnly.tenantId,
-		platformAccountId: tenantOnly.platformAccountId,
-		channel: 'instagram',
-		name: 'E2E Tenant Only',
-		plan: 'starter',
-		accessToken: `tok_${randomUUID()}`,
-	})
 
 	await putTenant({
 		tenantId: accountMode.tenantId,
-		platformAccountId: `legacy-${accountMode.platformAccountId}`,
+		platformAccountId: accountMode.platformAccountId,
 		channel: 'instagram',
 		name: 'E2E Tenant Account',
 		plan: 'starter',
@@ -109,21 +115,6 @@ async function run() {
 	console.log('Seeding e2e test records...')
 	await seed()
 
-	const validTenantPayload = {
-		object: 'instagram',
-		entry: [
-			{
-				id: tenantOnly.platformAccountId,
-				messaging: [
-					{
-						sender: { id: tenantOnly.senderId },
-						timestamp: 1740862234,
-						message: { mid: tenantOnly.mid, text: 'hello tenant mode' },
-					},
-				],
-			},
-		],
-	}
 
 	const validAccountPayload = {
 		object: 'instagram',
@@ -158,15 +149,26 @@ async function run() {
 	}
 
 	console.log('Testing invalid signature -> 401...')
-	const badSigStatus = await postWebhook(validTenantPayload, 'sha256=bad')
+	const badSigStatus = await postWebhook(validAccountPayload, 'sha256=bad')
 	assert(badSigStatus === 401, `expected 401, got ${badSigStatus}`)
 
-	console.log('Testing valid tenant webhook -> 200...')
-	const tenantStatus = await postWebhook(
-		validTenantPayload,
-		sign(JSON.stringify(validTenantPayload)),
+	console.log('Testing send-message auth behavior...')
+	if (sendMessageApiKey) {
+		const unauthorized = await postSendMessage({}, 'wrong-key')
+		assert(
+			unauthorized.status === 401,
+			`expected 401 for wrong x-api-key, got ${unauthorized.status}`,
+		)
+	}
+	const invalidPayload = await postSendMessage(
+		{},
+		sendMessageApiKey || undefined,
 	)
-	assert(tenantStatus === 200, `expected 200, got ${tenantStatus}`)
+	assert(
+		invalidPayload.status === 400,
+		`expected 400 for invalid send-message payload, got ${invalidPayload.status}`,
+	)
+
 
 	console.log('Testing valid account webhook -> 200...')
 	const accountStatus = await postWebhook(
@@ -195,11 +197,6 @@ async function run() {
 	assert(beforeDup === afterDup, `duplicate changed item count ${beforeDup} -> ${afterDup}`)
 
 	console.log('Verifying persisted writes...')
-	const tenantPk = `TENANT#${tenantOnly.tenantId}#ACCOUNT#${tenantOnly.tenantId}#CONTACT#${tenantOnly.senderId}`
-	assert(
-		(await waitForMinCount(tenantPk, 2)) > 0,
-		'tenant-mode message/contact not found',
-	)
 	assert(
 		(await waitForMinCount(accountPk, 2)) > 0,
 		'account-mode message/contact not found',

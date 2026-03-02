@@ -103,7 +103,7 @@ export interface Message {
 export interface RoutingContext {
 	tenantId: string
 	accountId: string
-	mode: 'account' | 'legacy-tenant'
+	mode: 'account'
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -160,10 +160,6 @@ export async function getAccountByPlatformAccountId(
 
 /**
  * Access pattern: resolve routing context by platform account ID.
- *
- * Migration-safe dual-read:
- * 1) Account item under TENANT#... / ACCOUNT#... (new model)
- * 2) Legacy Tenant metadata item (Phase 2 model)
  */
 export async function getRoutingContextByPlatformAccountId(
 	platformAccountId: string,
@@ -175,16 +171,6 @@ export async function getRoutingContextByPlatformAccountId(
 			tenantId: account.tenantId,
 			accountId: account.accountId,
 			mode: 'account',
-		}
-	}
-
-	const tenant = await getTenantByPlatformAccountId(platformAccountId)
-
-	if (tenant) {
-		return {
-			tenantId: tenant.tenantId,
-			accountId: tenant.tenantId,
-			mode: 'legacy-tenant',
 		}
 	}
 

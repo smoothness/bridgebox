@@ -131,7 +131,7 @@ pnpm e2e:webhook
 pnpm e2e:webhook:clean
 ```
 
-Seed test data (defaults to Account mode):
+Seed test data (Tenant + Account):
 
 ```bash
 pnpm db:seed
@@ -162,7 +162,7 @@ pnpm format
 | Contact | `TENANT#<tenantId>#ACCOUNT#<accountId>` | `CONTACT#<senderId>` | `name`, `lastChannel` |
 | Message | `TENANT#<tenantId>#ACCOUNT#<accountId>#CONTACT#<senderId>` | `MSG#<isoTimestamp>#<externalMessageId>` | `body`, `channel`, `status`, `externalMessageId` |
 
-Webhook routing is Account-first via `platformAccountId`, with legacy tenant fallback for development compatibility.
+Webhook routing resolves Account context via `platformAccountId`.
 
 ## 📤 Outbound Messaging
 
@@ -170,7 +170,22 @@ Bridgebox now supports outbound text messaging through Meta Graph API.
 
 - Endpoint: `POST /send-message`
 - Channels: `instagram`, `facebook`, `whatsapp`
-- Routing: resolves `platformAccountId` with account-first lookup and development compatibility fallback.
+- Routing: resolves `platformAccountId` using account lookup.
+- Optional auth: set `SEND_MESSAGE_API_KEY` and pass `x-api-key` header on `/send-message` requests.
+
+### Outbound auth setup (recommended)
+
+Add this to your local `.env`:
+
+```bash
+SEND_MESSAGE_API_KEY=your-strong-random-key
+```
+
+When set, requests to `POST /send-message` must include:
+
+```http
+x-api-key: your-strong-random-key
+```
 
 ## 🛠️ Tech Stack
 

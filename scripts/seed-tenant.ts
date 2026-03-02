@@ -26,11 +26,6 @@
  *   SEED_PLAN                  Billing plan identifier.
  *                              Default: "starter"
  *
- *   SEED_MODE                  "tenant" | "account"
- *                              - tenant: creates only Tenant (legacy flow)
- *                              - account: creates Tenant + Account (Phase 3.5 flow)
- *                              Default: "account"
- *
  *   SEED_ACCOUNT_ID            Account ID used only in account mode.
  *                              Default: generated UUID
  *
@@ -65,7 +60,6 @@ const accessToken = process.env.SEED_ACCESS_TOKEN ?? 'YOUR_ACCESS_TOKEN_HERE'
 const channel = (process.env.SEED_CHANNEL ?? 'instagram') as Channel
 const name = process.env.SEED_TENANT_NAME ?? 'Test Tenant'
 const plan = process.env.SEED_PLAN ?? 'starter'
-const mode = (process.env.SEED_MODE ?? 'account') as 'tenant' | 'account'
 const accountId = process.env.SEED_ACCOUNT_ID ?? randomUUID()
 const accountDisplayName = process.env.SEED_ACCOUNT_DISPLAY_NAME ?? 'Test Account'
 
@@ -86,13 +80,8 @@ console.log(`  platformAccountId : ${platformAccountId}`)
 console.log(`  channel           : ${channel}`)
 console.log(`  name              : ${name}`)
 console.log(`  plan              : ${plan}`)
-console.log(`  mode              : ${mode}`)
-if (mode === 'account') {
-	console.log(`  accountId         : ${accountId}`)
-	console.log(`  accountName       : ${accountDisplayName}`)
-} else {
-	console.log('  accountId         : (legacy tenant mode)')
-}
+console.log(`  accountId         : ${accountId}`)
+console.log(`  accountName       : ${accountDisplayName}`)
 console.log(`  table             : ${process.env.SOCIAL_CRM_TABLE_NAME}\n`)
 
 const tenant = await putTenant({
@@ -107,19 +96,15 @@ const tenant = await putTenant({
 console.log(`✓ Tenant seeded successfully.`)
 console.log(`  pk : ${tenant.pk}`)
 console.log(`  sk : ${tenant.sk}`)
-
-if (mode === 'account') {
-	const account = await putAccount({
-		tenantId,
-		accountId,
-		platformAccountId,
-		channel,
-		displayName: accountDisplayName,
-		accessToken,
-		clientLabel: name,
-	})
-
-	console.log(`✓ Account seeded successfully.`)
-	console.log(`  pk : ${account.pk}`)
-	console.log(`  sk : ${account.sk}`)
-}
+const account = await putAccount({
+	tenantId,
+	accountId,
+	platformAccountId,
+	channel,
+	displayName: accountDisplayName,
+	accessToken,
+	clientLabel: name,
+})
+console.log(`✓ Account seeded successfully.`)
+console.log(`  pk : ${account.pk}`)
+console.log(`  sk : ${account.sk}`)

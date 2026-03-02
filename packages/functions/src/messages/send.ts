@@ -1,7 +1,4 @@
-import {
-	getAccountByPlatformAccountId,
-	getTenantByPlatformAccountId,
-} from '@bridgebox/core/dynamo'
+import { getAccountByPlatformAccountId } from '@bridgebox/core/dynamo'
 import { OutboundChannelSchema, sendMetaTextMessage } from '@bridgebox/core/meta'
 import type {
 	APIGatewayProxyEventV2,
@@ -24,6 +21,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (
 		return json(405, { message: 'Method not allowed' })
 	}
 
+	const expectedApiKey = process.env.SEND_MESSAGE_API_KEY
+	if (expectedApiKey) {
+		const providedApiKey = event.headers['x-api-key'] ?? event.headers['X-API-Key']
+		if (!providedApiKey || providedApiKey !== expectedApiKey) {
+			return json(401, { message: 'Unauthorized' })
+		}
+	}
+
 	const parsedBody = safeJsonParse(event.body ?? '')
 	if (!parsedBody.ok) {
 		return json(400, { message: 'Invalid JSON body' })
@@ -39,22 +44,18 @@ export const handler: APIGatewayProxyHandlerV2 = async (
 
 	const { channel, platformAccountId, recipientId, text } = parsed.data
 
-	// Account-first evolution path with tenant metadata fallback.
 	const account = await getAccountByPlatformAccountId(platformAccountId)
-	const tenant = account
-		? undefined
-		: await getTenantByPlatformAccountId(platformAccountId)
 
-	if (!account && !tenant) {
+	if (!account) {
 		return json(404, {
-			message: 'No tenant/account found for provided platformAccountId',
+			message: 'No account found for provided platformAccountId',
 		})
 	}
 
-	const accessToken = account?.accessToken ?? tenant?.accessToken
+	const accessToken = account.accessToken
 	if (!accessToken) {
 		return json(400, {
-			message: 'Missing access token for resolved tenant/account',
+			message: 'Missing access token for resolved account',
 		})
 	}
 

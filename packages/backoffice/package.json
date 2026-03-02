@@ -1,0 +1,22 @@
+{
+	"name": "@bridgebox/backoffice",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev -p 3001",
+		"build": "next build",
+		"start": "next start -p 3001",
+		"lint": "biome lint ."
+	},
+	"dependencies": {
+		"next": "^16.0.0",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.3",
+		"@types/react": "^19.2.0",
+		"@types/react-dom": "^19.2.0",
+		"@types/node": "^25.3.0"
+	}
+}

@@ -1,6 +1,6 @@
 import type { SSTConfig } from 'sst'
 import type { StackContext } from 'sst/constructs'
-import { Api, Queue, Table } from 'sst/constructs'
+import { Api, NextjsSite, Queue, Table } from 'sst/constructs'
 
 function ApiStack({ stack }: StackContext) {
 	// Dead Letter Queue — receives messages that fail processing 3 times
@@ -79,11 +79,21 @@ function ApiStack({ stack }: StackContext) {
 	// Grant only the webhook receiver permission to enqueue messages
 	api.attachPermissionsToRoute('POST /webhooks/meta', [incomingMessagesQueue])
 
+	const portalSite = new NextjsSite(stack, 'PortalSite', {
+		path: 'packages/portal',
+	})
+
+	const backofficeSite = new NextjsSite(stack, 'BackofficeSite', {
+		path: 'packages/backoffice',
+	})
+
 	stack.addOutputs({
 		ApiEndpoint: api.url,
 		IncomingMessagesQueueUrl: incomingMessagesQueue.queueUrl,
 		DeadLetterQueueUrl: dlq.queueUrl,
 		SocialCRMTableName: table.tableName,
+		PortalUrl: portalSite.url || '',
+		BackofficeUrl: backofficeSite.url || '',
 	})
 }
 

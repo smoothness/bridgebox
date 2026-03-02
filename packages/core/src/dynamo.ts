@@ -130,15 +130,12 @@ export async function getTenantByPlatformAccountId(
 }
 
 /**
- * Access pattern: resolve routing context by platform account ID.
- *
- * Migration-safe dual-read:
- * 1) Account item under TENANT#... / ACCOUNT#... (new model)
- * 2) Legacy Tenant metadata item (Phase 2 model)
+ * Access pattern: resolve an Account by platform account ID via ByPlatformAccountId GSI.
+ * Returns undefined when no Account exists for the given platform account.
  */
-export async function getRoutingContextByPlatformAccountId(
+export async function getAccountByPlatformAccountId(
 	platformAccountId: string,
-): Promise<RoutingContext | undefined> {
+): Promise<Account | undefined> {
 	const result = await docClient.send(
 		new QueryCommand({
 			TableName: TABLE_NAME,
@@ -150,8 +147,7 @@ export async function getRoutingContextByPlatformAccountId(
 	)
 
 	const items = result.Items ?? []
-
-	const account = items.find(
+	return items.find(
 		(item) =>
 			typeof item.pk === 'string' &&
 			item.pk.startsWith('TENANT#') &&
@@ -160,6 +156,19 @@ export async function getRoutingContextByPlatformAccountId(
 			typeof item.tenantId === 'string' &&
 			typeof item.accountId === 'string',
 	) as Account | undefined
+}
+
+/**
+ * Access pattern: resolve routing context by platform account ID.
+ *
+ * Migration-safe dual-read:
+ * 1) Account item under TENANT#... / ACCOUNT#... (new model)
+ * 2) Legacy Tenant metadata item (Phase 2 model)
+ */
+export async function getRoutingContextByPlatformAccountId(
+	platformAccountId: string,
+): Promise<RoutingContext | undefined> {
+	const account = await getAccountByPlatformAccountId(platformAccountId)
 
 	if (account) {
 		return {
@@ -169,13 +178,7 @@ export async function getRoutingContextByPlatformAccountId(
 		}
 	}
 
-	const tenant = items.find(
-		(item) =>
-			typeof item.pk === 'string' &&
-			item.pk.startsWith('TENANT#') &&
-			item.sk === 'METADATA' &&
-			typeof item.tenantId === 'string',
-	) as Tenant | undefined
+	const tenant = await getTenantByPlatformAccountId(platformAccountId)
 
 	if (tenant) {
 		return {

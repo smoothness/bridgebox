@@ -123,6 +123,19 @@ Run the full Bruno API test suite against the deployed API Gateway:
 pnpm api:bruno:run
 ```
 
+Run webhook end-to-end test suite and cleanup:
+
+```bash
+pnpm e2e:webhook
+pnpm e2e:webhook:clean
+```
+
+Seed test data (defaults to Account mode):
+
+```bash
+pnpm db:seed
+```
+
 ## 🧹 Code Quality
 
 ```bash
@@ -147,6 +160,8 @@ pnpm format
 | Account | `TENANT#<tenantId>` | `ACCOUNT#<accountId>` | `platformAccountId`, `channel`, `displayName` |
 | Contact | `TENANT#<tenantId>#ACCOUNT#<accountId>` | `CONTACT#<senderId>` | `name`, `lastChannel` |
 | Message | `TENANT#<tenantId>#ACCOUNT#<accountId>#CONTACT#<senderId>` | `MSG#<isoTimestamp>#<externalMessageId>` | `body`, `channel`, `status`, `externalMessageId` |
+
+Webhook routing is Account-first via `platformAccountId`, with legacy tenant fallback for development compatibility.
 
 ## 🛠️ Tech Stack
 

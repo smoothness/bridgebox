@@ -20,6 +20,8 @@ tags:
     description: Health and smoke-check endpoints.
   - name: webhooks
     description: Webhook endpoints.
+  - name: messages
+    description: Outbound message endpoints.
 security: []
 paths:
   /:
@@ -107,6 +109,41 @@ paths:
                 $ref: "#/components/schemas/SuccessResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /send-message:
+    post:
+      tags: [messages]
+      operationId: postSendMessage
+      summary: Send outbound message through Meta
+      description: |
+        Sends a text message to a user through Meta Graph API.
+        Supports instagram, facebook, and whatsapp channels.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "200":
+          description: Message accepted by Meta API.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendMessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: No tenant/account found for provided platformAccountId.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Meta API request failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   responses:
     BadRequest:
@@ -132,6 +169,38 @@ components:
       type: object
       additionalProperties: true
       description: Placeholder schema for incoming Meta webhook payload.
+    SendMessageRequest:
+      type: object
+      required:
+        - channel
+        - platformAccountId
+        - recipientId
+        - text
+      properties:
+        channel:
+          type: string
+          enum: [instagram, facebook, whatsapp]
+        platformAccountId:
+          type: string
+          description: Page ID (instagram/facebook) or Phone Number ID (whatsapp).
+        recipientId:
+          type: string
+          description: PSID / IG scoped user ID / phone number depending on channel.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    SendMessageResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Message sent
+        result:
+          type: object
+          additionalProperties: true
     ErrorResponse:
       type: object
       required:

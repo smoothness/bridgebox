@@ -94,6 +94,7 @@ pnpm remove
 |---|---|---|
 | GET | `/webhooks/meta` | Meta webhook verification challenge |
 | POST | `/webhooks/meta` | Receive inbound messages from Meta |
+| POST | `/send-message` | Send outbound text message via Instagram, Facebook, or WhatsApp |
 
 ### 📖 API Docs
 
@@ -162,6 +163,14 @@ pnpm format
 | Message | `TENANT#<tenantId>#ACCOUNT#<accountId>#CONTACT#<senderId>` | `MSG#<isoTimestamp>#<externalMessageId>` | `body`, `channel`, `status`, `externalMessageId` |
 
 Webhook routing is Account-first via `platformAccountId`, with legacy tenant fallback for development compatibility.
+
+## 📤 Outbound Messaging
+
+Bridgebox now supports outbound text messaging through Meta Graph API.
+
+- Endpoint: `POST /send-message`
+- Channels: `instagram`, `facebook`, `whatsapp`
+- Routing: resolves `platformAccountId` with account-first lookup and development compatibility fallback.
 
 ## 🛠️ Tech Stack
 

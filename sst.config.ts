@@ -61,6 +61,8 @@ function ApiStack({ stack }: StackContext) {
 					META_APP_SECRET: process.env.META_APP_SECRET ?? '',
 					// SQS queue URL for async message processing
 					INCOMING_MESSAGES_QUEUE_URL: incomingMessagesQueue.queueUrl,
+					// DynamoDB table for resolving account/tenant context in send-message
+					SOCIAL_CRM_TABLE_NAME: table.tableName,
 				},
 			},
 		},
@@ -68,6 +70,7 @@ function ApiStack({ stack }: StackContext) {
 			'GET /': 'packages/functions/src/lambda.handler',
 			'GET /webhooks/meta': 'packages/functions/src/webhooks/meta.handler',
 			'POST /webhooks/meta': 'packages/functions/src/webhooks/meta.handler',
+			'POST /send-message': 'packages/functions/src/messages/send.handler',
 		},
 	})
 

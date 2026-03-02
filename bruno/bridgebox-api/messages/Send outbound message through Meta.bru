@@ -1,0 +1,23 @@
+meta {
+  name: Send outbound message through Meta
+  type: http
+  seq: 1
+  tags: [
+    messages
+  ]
+}
+
+post {
+  url: {{baseUrl}}/send-message
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "channel": "instagram",
+    "platformAccountId": "",
+    "recipientId": "",
+    "text": ""
+  }
+}

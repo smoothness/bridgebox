@@ -61,6 +61,79 @@ export const MetaSocialWebhookSchema = z.object({
 })
 
 export type MetaSocialWebhook = z.infer<typeof MetaSocialWebhookSchema>
+// ─── Outbound Messaging (Instagram/Facebook/WhatsApp) ───────────────────────
+
+export const OutboundChannelSchema = z.enum(['instagram', 'facebook', 'whatsapp'])
+export type OutboundChannel = z.infer<typeof OutboundChannelSchema>
+
+const MetaSendMessageResponseSchema = z.object({
+	recipient_id: z.string().optional(),
+	message_id: z.string().optional(),
+	messages: z.array(z.object({ id: z.string() })).optional(),
+})
+
+export type MetaSendMessageResponse = z.infer<typeof MetaSendMessageResponseSchema>
+
+/**
+ * Sends a plain text message through Meta Graph API.
+ *
+ * Channel specifics:
+ * - instagram/facebook: /{PAGE_ID}/messages
+ * - whatsapp:          /{PHONE_NUMBER_ID}/messages
+ */
+export async function sendMetaTextMessage(input: {
+	channel: OutboundChannel
+	/** Page ID (IG/FB) or Phone Number ID (WhatsApp). */
+	platformAccountId: string
+	/** PSID / IG scoped user ID / WhatsApp recipient phone number. */
+	recipientId: string
+	text: string
+	accessToken: string
+}): Promise<MetaSendMessageResponse> {
+	const { channel, platformAccountId, recipientId, text, accessToken } = input
+	const graphVersion = process.env.META_GRAPH_VERSION ?? 'v20.0'
+	const url = `https://graph.facebook.com/${graphVersion}/${platformAccountId}/messages`
+
+	const payload =
+		channel === 'whatsapp'
+			? {
+					messaging_product: 'whatsapp',
+					to: recipientId,
+					type: 'text',
+					text: { body: text },
+				}
+			: {
+					recipient: { id: recipientId },
+					message: { text },
+					messaging_type: 'RESPONSE',
+				}
+
+	const response = await fetch(url, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			authorization: `Bearer ${accessToken}`,
+		},
+		body: JSON.stringify(payload),
+	})
+
+	if (!response.ok) {
+		const errorText = await response.text()
+		throw new Error(
+			`Meta send message failed (${response.status}) [${channel}]: ${errorText}`,
+		)
+	}
+
+	const data = await response.json()
+	const parsed = MetaSendMessageResponseSchema.safeParse(data)
+	if (!parsed.success) {
+		throw new Error(
+			`Meta send message returned unexpected payload: ${JSON.stringify(data)}`,
+		)
+	}
+
+	return parsed.data
+}
 
 // ─── Signature Validation ─────────────────────────────────────────────────────
 export function isValidMetaSignature(

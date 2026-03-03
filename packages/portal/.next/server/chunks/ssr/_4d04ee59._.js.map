@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../../../packages/portal/app/page.tsx"],"sourcesContent":["export default function PortalHomePage() {\n\treturn (\n\t\t<main>\n\t\t\t<h1>Bridgebox Portal</h1>\n\t\t</main>\n\t)\n}\n"],"names":[],"mappings":"mKAAe,SAAS,IACvB,MACC,CAAA,EAAA,EAAA,GAAA,EAAC,OAAA,UACA,CAAA,EAAA,EAAA,GAAA,EAAC,KAAA,UAAG,sBAGP"}

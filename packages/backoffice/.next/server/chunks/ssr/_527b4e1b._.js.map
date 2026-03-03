@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../../../packages/backoffice/app/page.tsx"],"sourcesContent":["export default function BackofficeHomePage() {\n\treturn (\n\t\t<main>\n\t\t\t<h1>Bridgebox Backoffice</h1>\n\t\t</main>\n\t)\n}\n"],"names":[],"mappings":"kKAAe,SAAS,IACvB,MACC,CAAA,EAAA,EAAA,GAAA,EAAC,OAAA,UACA,CAAA,EAAA,EAAA,GAAA,EAAC,KAAA,UAAG,0BAGP"}

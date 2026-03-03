@@ -51,6 +51,7 @@ This document provides instructions for any AI agent working on this project. Pl
 - **Statelessness:** Ensure all Lambda functions are stateless. Use DynamoDB for all persistence.
 - **Package Manager:** Always use pnpm for package management.
 - Use pnpm for all dependency management and scripts in this repository.
+- **Type Definition Placement:** Keep type aliases and interfaces at the top of each source file, before runtime logic.
 
 ## 5.1 DynamoDB Access Patterns (Mandatory)
 

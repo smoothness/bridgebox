@@ -1,0 +1,19 @@
+{
+	"name": "@bridgebox/auth",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc -noEmit"
+	},
+	"dependencies": {
+		"@bridgebox/domain": "workspace:*",
+		"aws-jwt-verify": "^5.1.1"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.3"
+	}
+}

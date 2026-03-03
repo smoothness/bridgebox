@@ -9,6 +9,10 @@
 		"lint": "biome lint ."
 	},
 	"dependencies": {
+		"@bridgebox/api-client": "workspace:*",
+		"@bridgebox/auth": "workspace:*",
+		"@bridgebox/domain": "workspace:*",
+		"@bridgebox/ui": "workspace:*",
 		"next": "^16.0.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0"

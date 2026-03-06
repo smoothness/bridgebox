@@ -1,5 +1,4 @@
 import {
-	buildSessionFromClaims,
 	isAuthError,
 	requireRole,
 	verifyCognitoTokenAndBuildSession,
@@ -32,27 +31,7 @@ export async function getBackofficeSession(): Promise<Session> {
 			clientId: clientId as string,
 		})
 	}
-
-	const isLocalDev = process.env.NODE_ENV === 'development'
-	if (!isLocalDev) {
-		throw new AuthError('UNAUTHENTICATED')
-	}
-
-	const userId =
-		headerStore.get('x-user-id') ??
-		cookieStore.get('bb_user_id')?.value ??
-		'local-dev-admin'
-	const roleValue =
-		headerStore.get('x-user-role') ??
-		cookieStore.get('bb_role')?.value ??
-		'platform_admin'
-
-	const session = buildSessionFromClaims({
-		sub: userId,
-		role: roleValue === 'platform_admin' ? 'platform_admin' : 'tenant_user',
-	})
-
-	return session
+	throw new AuthError('UNAUTHENTICATED')
 }
 
 export async function requireBackofficeAccess() {

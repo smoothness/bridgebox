@@ -5,6 +5,7 @@ import { SecretValue } from 'aws-cdk-lib'
 import { CfnPermission } from 'aws-cdk-lib/aws-lambda'
 import {
 	OAuthScope,
+	VerificationEmailStyle,
 	ProviderAttribute,
 	UserPoolClientIdentityProvider,
 	UserPoolDomain,
@@ -88,14 +89,27 @@ function ApiStack({ stack }: StackContext) {
 
 	// Grant only the webhook receiver permission to enqueue messages
 	api.attachPermissionsToRoute('POST /webhooks/meta', [incomingMessagesQueue])
-	const portalBaseUrl = process.env.PORTAL_BASE_URL ?? 'http://localhost:3000'
+	const localPortalBaseUrl = 'http://localhost:3000'
+	const localBackofficeBaseUrl = 'http://localhost:3001'
+	const portalBaseUrl = process.env.PORTAL_BASE_URL ?? localPortalBaseUrl
 	const backofficeBaseUrl =
-		process.env.BACKOFFICE_BASE_URL ?? 'http://localhost:3001'
-	const callbackUrls = [
-		`${portalBaseUrl}/auth/callback`,
-		`${backofficeBaseUrl}/auth/callback`,
-	]
-	const logoutUrls = [`${portalBaseUrl}/`, `${backofficeBaseUrl}/`]
+		process.env.BACKOFFICE_BASE_URL ?? localBackofficeBaseUrl
+	const callbackUrls = Array.from(
+		new Set([
+			`${localPortalBaseUrl}/auth/callback`,
+			`${localBackofficeBaseUrl}/auth/callback`,
+			`${portalBaseUrl}/auth/callback`,
+			`${backofficeBaseUrl}/auth/callback`,
+		]),
+	)
+	const logoutUrls = Array.from(
+		new Set([
+			`${localPortalBaseUrl}/`,
+			`${localBackofficeBaseUrl}/`,
+			`${portalBaseUrl}/`,
+			`${backofficeBaseUrl}/`,
+		]),
+	)
 	const hasGoogleIdp = Boolean(
 		process.env.COGNITO_GOOGLE_CLIENT_ID && process.env.COGNITO_GOOGLE_CLIENT_SECRET
 	)
@@ -112,9 +126,20 @@ function ApiStack({ stack }: StackContext) {
 		login: ['email'],
 		cdk: {
 			userPool: {
-				selfSignUpEnabled: false,
+				selfSignUpEnabled: true,
+				autoVerify: { email: true },
+				userVerification: {
+					emailSubject: 'Bridgebox verification code',
+					emailBody:
+						'Your Bridgebox verification code is {####}. Enter this code to confirm your account.',
+					emailStyle: VerificationEmailStyle.CODE,
+				},
 			},
 			userPoolClient: {
+				authFlows: {
+					userPassword: true,
+					userSrp: true,
+				},
 				oAuth: {
 					callbackUrls,
 					logoutUrls,

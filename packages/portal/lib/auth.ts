@@ -1,5 +1,4 @@
 import {
-	buildSessionFromClaims,
 	isAuthError,
 	requireRole,
 	requireTenantContext,
@@ -33,32 +32,7 @@ export async function getPortalSession(): Promise<Session> {
 			clientId: clientId as string,
 		})
 	}
-
-	const isLocalDev = process.env.NODE_ENV === 'development'
-	if (!isLocalDev) {
-		throw new AuthError('UNAUTHENTICATED')
-	}
-
-	const userId =
-		headerStore.get('x-user-id') ??
-		cookieStore.get('bb_user_id')?.value ??
-		'local-dev-user'
-	const roleValue =
-		headerStore.get('x-user-role') ??
-		cookieStore.get('bb_role')?.value ??
-		'tenant_admin'
-	const tenantId =
-		headerStore.get('x-tenant-id') ??
-		cookieStore.get('bb_tenant_id')?.value ??
-		'tenant-dev'
-
-	const session = buildSessionFromClaims({
-		sub: userId,
-		role: roleValue === 'tenant_user' ? 'tenant_user' : 'tenant_admin',
-		tenantId,
-	})
-
-	return session
+	throw new AuthError('UNAUTHENTICATED')
 }
 
 export async function requirePortalAccess() {

@@ -36,11 +36,14 @@ function ApiStack({ stack }: StackContext) {
 			sk: 'string',
 			// GSI key — platform-specific account ID (page ID, WABA_ID, TikTok user ID, etc.)
 			platformAccountId: 'string',
+			gsi1pk: 'string',
+			gsi1sk: 'string',
 		},
 		primaryIndex: { partitionKey: 'pk', sortKey: 'sk' },
 		globalIndexes: {
 			// Resolves which Tenant owns the account that received an inbound message
 			ByPlatformAccountId: { partitionKey: 'platformAccountId' },
+			ByUserEmail: { partitionKey: 'gsi1pk', sortKey: 'gsi1sk' },
 		},
 	})
 
@@ -96,10 +99,10 @@ function ApiStack({ stack }: StackContext) {
 		process.env.BACKOFFICE_BASE_URL ?? localBackofficeBaseUrl
 	const callbackUrls = Array.from(
 		new Set([
-			`${localPortalBaseUrl}/auth/callback`,
-			`${localBackofficeBaseUrl}/auth/callback`,
-			`${portalBaseUrl}/auth/callback`,
-			`${backofficeBaseUrl}/auth/callback`,
+			`${localPortalBaseUrl}/api/auth/callback`,
+			`${localBackofficeBaseUrl}/api/auth/callback`,
+			`${portalBaseUrl}/api/auth/callback`,
+			`${backofficeBaseUrl}/api/auth/callback`,
 		]),
 	)
 	const logoutUrls = Array.from(
@@ -211,6 +214,7 @@ function ApiStack({ stack }: StackContext) {
 			COGNITO_USER_POOL_ID: auth.userPoolId,
 			COGNITO_APP_CLIENT_ID: auth.userPoolClientId,
 			COGNITO_DOMAIN: cognitoDomainHost,
+			SOCIAL_CRM_TABLE_NAME: table.tableName,
 			PORTAL_BASE_URL: portalBaseUrl,
 			BACKOFFICE_BASE_URL: backofficeBaseUrl,
 		},
@@ -232,6 +236,7 @@ function ApiStack({ stack }: StackContext) {
 			COGNITO_USER_POOL_ID: auth.userPoolId,
 			COGNITO_APP_CLIENT_ID: auth.userPoolClientId,
 			COGNITO_DOMAIN: cognitoDomainHost,
+			SOCIAL_CRM_TABLE_NAME: table.tableName,
 			PORTAL_BASE_URL: portalBaseUrl,
 			BACKOFFICE_BASE_URL: backofficeBaseUrl,
 		},

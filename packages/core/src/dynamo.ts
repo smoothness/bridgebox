@@ -15,14 +15,19 @@ const client = new DynamoDBClient({})
  */
 export const docClient = DynamoDBDocumentClient.from(client)
 
-const TABLE_NAME = process.env.SOCIAL_CRM_TABLE_NAME
-if (!TABLE_NAME) {
-	throw new Error('SOCIAL_CRM_TABLE_NAME environment variable is not set')
+function getTableName() {
+	const tableName = process.env.SOCIAL_CRM_TABLE_NAME
+	if (!tableName) {
+		throw new Error('SOCIAL_CRM_TABLE_NAME environment variable is not set')
+	}
+	return tableName
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type Channel = 'instagram' | 'facebook' | 'whatsapp'
+export type AppTarget = 'portal' | 'backoffice'
+export type MembershipRole = 'tenant_user' | 'tenant_admin' | 'platform_admin'
 
 /**
  * Tenant — represents a business account that has connected a platform account.
@@ -106,6 +111,20 @@ export interface RoutingContext {
 	mode: 'account'
 }
 
+export interface Membership {
+	pk: string
+	sk: string
+	principalId: string
+	email: string
+	app: AppTarget
+	role: MembershipRole
+	tenantId?: string
+	createdAt: string
+	updatedAt: string
+	gsi1pk: string
+	gsi1sk: string
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -119,7 +138,7 @@ export async function getTenantByPlatformAccountId(
 ): Promise<Tenant | undefined> {
 	const result = await docClient.send(
 		new QueryCommand({
-			TableName: TABLE_NAME,
+			TableName: getTableName(),
 			IndexName: 'ByPlatformAccountId',
 			KeyConditionExpression: 'platformAccountId = :v',
 			ExpressionAttributeValues: { ':v': platformAccountId },
@@ -138,7 +157,7 @@ export async function getAccountByPlatformAccountId(
 ): Promise<Account | undefined> {
 	const result = await docClient.send(
 		new QueryCommand({
-			TableName: TABLE_NAME,
+			TableName: getTableName(),
 			IndexName: 'ByPlatformAccountId',
 			KeyConditionExpression: 'platformAccountId = :v',
 			ExpressionAttributeValues: { ':v': platformAccountId },
@@ -192,7 +211,7 @@ export async function getOrCreateContact(
 	const sk = `CONTACT#${senderId}`
 
 	const existing = await docClient.send(
-		new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk } }),
+		new GetCommand({ TableName: getTableName(), Key: { pk, sk } }),
 	)
 	if (existing.Item) return existing.Item as Contact
 
@@ -201,7 +220,7 @@ export async function getOrCreateContact(
 	try {
 		await docClient.send(
 			new PutCommand({
-				TableName: TABLE_NAME,
+				TableName: getTableName(),
 				Item: contact,
 				// Prevents a race-condition overwrite when two Lambdas process
 				// the first message from the same sender at the same time
@@ -238,7 +257,7 @@ export async function getOrCreateAccountContact(
 	const sk = `CONTACT#${senderId}`
 
 	const existing = await docClient.send(
-		new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk } }),
+		new GetCommand({ TableName: getTableName(), Key: { pk, sk } }),
 	)
 	if (existing.Item) return existing.Item as Contact
 
@@ -247,7 +266,7 @@ export async function getOrCreateAccountContact(
 	try {
 		await docClient.send(
 			new PutCommand({
-				TableName: TABLE_NAME,
+				TableName: getTableName(),
 				Item: { ...contact, accountId },
 				ConditionExpression: 'attribute_not_exists(pk)',
 			}),
@@ -309,7 +328,7 @@ export async function saveMessage(
 					{
 						// Idempotency marker: one record per externalMessageId per contact.
 						Put: {
-							TableName: TABLE_NAME,
+							TableName: getTableName(),
 							Item: {
 								pk,
 								sk: dedupeSk,
@@ -323,7 +342,7 @@ export async function saveMessage(
 					},
 					{
 						Put: {
-							TableName: TABLE_NAME,
+							TableName: getTableName(),
 							Item: message,
 							ConditionExpression:
 								'attribute_not_exists(pk) AND attribute_not_exists(sk)',
@@ -386,7 +405,7 @@ export async function saveAccountMessage(
 				TransactItems: [
 					{
 						Put: {
-							TableName: TABLE_NAME,
+							TableName: getTableName(),
 							Item: {
 								pk,
 								sk: dedupeSk,
@@ -401,7 +420,7 @@ export async function saveAccountMessage(
 					},
 					{
 						Put: {
-							TableName: TABLE_NAME,
+							TableName: getTableName(),
 							Item: { ...message, accountId },
 							ConditionExpression:
 								'attribute_not_exists(pk) AND attribute_not_exists(sk)',
@@ -452,7 +471,7 @@ export async function putTenant(
 	const pk = `TENANT#${tenant.tenantId}`
 	const sk = 'METADATA' as const
 	const item: Tenant = { pk, sk, ...tenant }
-	await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
+	await docClient.send(new PutCommand({ TableName: getTableName(), Item: item }))
 	return item
 }
 
@@ -468,6 +487,127 @@ export async function putAccount(
 	const pk = `TENANT#${account.tenantId}`
 	const sk = `ACCOUNT#${account.accountId}`
 	const item: Account = { pk, sk, ...account }
-	await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
+	await docClient.send(new PutCommand({ TableName: getTableName(), Item: item }))
+	return item
+}
+
+function membershipPk(principalId: string) {
+	return `USER#${principalId}`
+}
+
+function membershipSk(app: AppTarget) {
+	return `MEMBERSHIP#${app}`
+}
+
+function membershipEmailPk(email: string) {
+	return `EMAIL#${email.trim().toLowerCase()}`
+}
+
+function toMembershipRole(value?: string): MembershipRole | undefined {
+	if (value === 'tenant_user') return 'tenant_user'
+	if (value === 'tenant_admin') return 'tenant_admin'
+	if (value === 'platform_admin') return 'platform_admin'
+	return undefined
+}
+
+function toMembership(item: Record<string, unknown>): Membership | undefined {
+	if (typeof item.pk !== 'string' || typeof item.sk !== 'string') return undefined
+	if (typeof item.principalId !== 'string' || typeof item.email !== 'string') {
+		return undefined
+	}
+	if (item.app !== 'portal' && item.app !== 'backoffice') return undefined
+	const role = toMembershipRole(
+		typeof item.role === 'string' ? item.role : undefined,
+	)
+	if (!role) return undefined
+	if (typeof item.createdAt !== 'string' || typeof item.updatedAt !== 'string') {
+		return undefined
+	}
+
+	return {
+		pk: item.pk,
+		sk: item.sk,
+		principalId: item.principalId,
+		email: item.email,
+		app: item.app,
+		role,
+		tenantId: typeof item.tenantId === 'string' ? item.tenantId : undefined,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+		gsi1pk:
+			typeof item.gsi1pk === 'string'
+				? item.gsi1pk
+				: membershipEmailPk(item.email),
+		gsi1sk:
+			typeof item.gsi1sk === 'string' ? item.gsi1sk : membershipSk(item.app),
+	}
+}
+
+export async function getMembershipByPrincipalIdAndApp(
+	principalId: string,
+	app: AppTarget,
+): Promise<Membership | undefined> {
+	const result = await docClient.send(
+		new GetCommand({
+			TableName: getTableName(),
+			Key: {
+				pk: membershipPk(principalId),
+				sk: membershipSk(app),
+			},
+		}),
+	)
+	if (!result.Item) return undefined
+	return toMembership(result.Item as Record<string, unknown>)
+}
+
+export async function getMembershipByEmailAndApp(
+	email: string,
+	app: AppTarget,
+): Promise<Membership | undefined> {
+	const result = await docClient.send(
+		new QueryCommand({
+			TableName: getTableName(),
+			IndexName: 'ByUserEmail',
+			KeyConditionExpression: 'gsi1pk = :email AND gsi1sk = :membership',
+			ExpressionAttributeValues: {
+				':email': membershipEmailPk(email),
+				':membership': membershipSk(app),
+			},
+			Limit: 1,
+		}),
+	)
+	const item = result.Items?.[0] as Record<string, unknown> | undefined
+	if (!item) return undefined
+	return toMembership(item)
+}
+
+export async function putMembership(
+	input: Omit<
+		Membership,
+		'pk' | 'sk' | 'createdAt' | 'updatedAt' | 'gsi1pk' | 'gsi1sk'
+	>,
+): Promise<Membership> {
+	const now = new Date().toISOString()
+	const normalizedEmail = input.email.trim().toLowerCase()
+	const item: Membership = {
+		pk: membershipPk(input.principalId),
+		sk: membershipSk(input.app),
+		principalId: input.principalId,
+		email: normalizedEmail,
+		app: input.app,
+		role: input.role,
+		tenantId: input.tenantId,
+		createdAt: now,
+		updatedAt: now,
+		gsi1pk: membershipEmailPk(normalizedEmail),
+		gsi1sk: membershipSk(input.app),
+	}
+
+	await docClient.send(
+		new PutCommand({
+			TableName: getTableName(),
+			Item: item,
+		}),
+	)
 	return item
 }

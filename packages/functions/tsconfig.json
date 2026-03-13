@@ -2,11 +2,7 @@
 	"extends": "@tsconfig/node18/tsconfig.json",
 	"compilerOptions": {
 		"module": "esnext",
-		"moduleResolution": "node",
-		"types": ["node"],
-		"baseUrl": ".",
-		"paths": {
-			"@bridgebox/core/*": ["../core/src/*"]
-		}
+		"moduleResolution": "bundler",
+		"types": ["node"]
 	}
 }

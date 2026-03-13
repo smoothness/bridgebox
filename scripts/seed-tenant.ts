@@ -23,8 +23,8 @@
  *   SEED_TENANT_NAME           Display name for the tenant.
  *                              Default: "Test Tenant"
  *
- *   SEED_PLAN                  Billing plan identifier.
- *                              Default: "starter"
+ *   SEED_PLAN                  Billing plan identifier: solo | agency_basic | agency_pro
+ *                              Default: "solo"
  *
  *   SEED_ACCOUNT_ID            Account ID used only in account mode.
  *                              Default: generated UUID
@@ -59,7 +59,7 @@ const platformAccountId =
 const accessToken = process.env.SEED_ACCESS_TOKEN ?? 'YOUR_ACCESS_TOKEN_HERE'
 const channel = (process.env.SEED_CHANNEL ?? 'instagram') as Channel
 const name = process.env.SEED_TENANT_NAME ?? 'Test Tenant'
-const plan = process.env.SEED_PLAN ?? 'starter'
+const plan = (process.env.SEED_PLAN ?? 'solo') as 'solo' | 'agency_basic' | 'agency_pro'
 const accountId = process.env.SEED_ACCOUNT_ID ?? randomUUID()
 const accountDisplayName = process.env.SEED_ACCOUNT_DISPLAY_NAME ?? 'Test Account'
 

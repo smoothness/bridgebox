@@ -48,8 +48,10 @@ export interface Tenant {
 	 */
 	platformAccountId: string
 	channel: Channel
+	/** Internal operational label used for routing logs. Authoritative profile lives in Aurora. */
 	name: string
-	plan: string
+	/** Must match Aurora tenant profile plan: 'solo' | 'agency_basic' | 'agency_pro' */
+	plan: 'solo' | 'agency_basic' | 'agency_pro'
 	/** OAuth access token for the connected platform account. */
 	accessToken: string
 }

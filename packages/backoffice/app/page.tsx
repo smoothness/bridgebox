@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Button, Input, Label, Select } from '@bridgebox/ui'
 import { isAuthError, requireBackofficeAccess } from '../lib/utils/auth/auth'
@@ -25,6 +26,9 @@ export default async function BackofficeHomePage({
 				<p>Access: allowed</p>
 				<p>User: {session.user.userId}</p>
 				<p>Role: {session.user.role}</p>
+				<p>
+					<Link href="/tenants">View all tenants →</Link>
+				</p>
 				{showTenantCreated ? (
 					<p>
 						Tenant created successfully. Tenant ID:{' '}
@@ -49,14 +53,30 @@ export default async function BackofficeHomePage({
 				</form>
 				<section>
 					<h2>Create Tenant</h2>
-				<form action="/api/admin/tenants" method="post" className="space-y-3">
+					<form action="/api/admin/tenants" method="post" className="space-y-3">
 						<div className="space-y-1">
-							<Label htmlFor="tenantName">Tenant name</Label>
-							<Input id="tenantName" name="tenantName" required />
+							<Label htmlFor="contactName">Contact name</Label>
+							<Input id="contactName" name="contactName" required />
 						</div>
 						<div className="space-y-1">
-							<Label htmlFor="tenantPlan">Plan</Label>
-							<Input id="tenantPlan" name="tenantPlan" defaultValue="starter" required />
+							<Label htmlFor="contactEmail">Contact email</Label>
+							<Input id="contactEmail" name="contactEmail" type="email" required />
+						</div>
+						<div className="space-y-1">
+							<Label htmlFor="country">Country</Label>
+							<Input id="country" name="country" required />
+						</div>
+						<div className="space-y-1">
+							<Label htmlFor="businessName">Business name (optional)</Label>
+							<Input id="businessName" name="businessName" />
+						</div>
+						<div className="space-y-1">
+							<Label htmlFor="plan">Plan</Label>
+							<Select id="plan" name="plan" defaultValue="solo">
+								<option value="solo">solo</option>
+								<option value="agency_basic">agency_basic</option>
+								<option value="agency_pro">agency_pro</option>
+							</Select>
 						</div>
 						<Button type="submit">Create Tenant</Button>
 					</form>

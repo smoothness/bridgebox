@@ -96,7 +96,7 @@ async function seed() {
 		platformAccountId: accountMode.platformAccountId,
 		channel: 'instagram',
 		name: 'E2E Tenant Account',
-		plan: 'starter',
+		plan: 'solo',
 		accessToken: `tok_${randomUUID()}`,
 	})
 

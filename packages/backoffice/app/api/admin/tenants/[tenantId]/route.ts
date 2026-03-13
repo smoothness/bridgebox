@@ -2,9 +2,12 @@ import { createApiClient } from '@bridgebox/api-client'
 import { isAuthError } from '@bridgebox/auth'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { requireBackofficeAccess } from '../../../../lib/utils/auth/auth'
+import { requireBackofficeAccess } from '../../../../../lib/utils/auth/auth'
 
-export async function POST(request: Request) {
+export async function POST(
+	request: Request,
+	{ params }: { params: Promise<{ tenantId: string }> },
+) {
 	try {
 		await requireBackofficeAccess()
 	} catch (error) {
@@ -17,17 +20,23 @@ export async function POST(request: Request) {
 		throw error
 	}
 
+	const { tenantId } = await params
+
 	const cookieStore = await cookies()
 	const idToken =
 		cookieStore.get('bb_id_token')?.value ??
 		cookieStore.get('bb_access_token')?.value
 	if (!idToken) {
-		return NextResponse.redirect(new URL('/?error=missing_token', request.url))
+		return NextResponse.redirect(
+			new URL(`/tenants/${tenantId}?error=missing_token`, request.url),
+		)
 	}
 
 	const apiBaseUrl = process.env.API_BASE_URL
 	if (!apiBaseUrl) {
-		return NextResponse.redirect(new URL('/?error=api_not_configured', request.url))
+		return NextResponse.redirect(
+			new URL(`/tenants/${tenantId}?error=api_not_configured`, request.url),
+		)
 	}
 
 	const formData = await request.formData()
@@ -35,31 +44,26 @@ export async function POST(request: Request) {
 	const contactEmail = String(formData.get('contactEmail') ?? '').trim()
 	const country = String(formData.get('country') ?? '').trim()
 	const plan = String(formData.get('plan') ?? '').trim()
+	const status = String(formData.get('status') ?? '').trim()
 	const businessName = String(formData.get('businessName') ?? '').trim()
-
-	if (!contactName || !contactEmail || !country || !plan) {
-		return NextResponse.redirect(
-			new URL('/?error=required_fields_missing', request.url),
-		)
-	}
 
 	const client = createApiClient({ baseUrl: apiBaseUrl, authToken: idToken })
 	try {
-		const profile = await client.createTenant({
-			contactName,
-			contactEmail,
-			country,
-			plan: plan as 'solo' | 'agency_basic' | 'agency_pro',
-			businessName: businessName || undefined,
+		await client.updateTenant(tenantId, {
+			contactName: contactName || undefined,
+			contactEmail: contactEmail || undefined,
+			country: country || undefined,
+			plan: (plan || undefined) as 'solo' | 'agency_basic' | 'agency_pro' | undefined,
+			status: (status || undefined) as 'active' | 'suspended' | undefined,
+			businessName: businessName || null,
 		})
-		const successUrl = new URL('/', request.url)
-		successUrl.searchParams.set('tenant_created', '1')
-		successUrl.searchParams.set('tenant_id', profile.tenantId)
-		return NextResponse.redirect(successUrl)
-	} catch (err) {
-		console.error('Failed to create tenant:', err)
 		return NextResponse.redirect(
-			new URL('/?error=create_tenant_failed', request.url),
+			new URL(`/tenants/${tenantId}?saved=1`, request.url),
+		)
+	} catch (err) {
+		console.error('Failed to update tenant:', err)
+		return NextResponse.redirect(
+			new URL(`/tenants/${tenantId}?error=update_failed`, request.url),
 		)
 	}
 }

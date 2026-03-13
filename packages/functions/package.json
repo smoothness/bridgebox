@@ -13,7 +13,11 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@aws-sdk/client-rds-data": "^3.1005.0",
 		"@aws-sdk/client-sqs": "^3.999.0",
+		"@bridgebox/auth": "workspace:*",
+		"@bridgebox/core": "workspace:*",
+		"@bridgebox/domain": "workspace:*",
 		"zod": "^4.3.6"
 	}
 }

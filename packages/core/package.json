@@ -4,11 +4,13 @@
 	"type": "module",
 	"exports": {
 		"./dynamo": "./src/dynamo.ts",
-		"./meta": "./src/meta.ts"
+		"./meta": "./src/meta.ts",
+		"./postgres": "./src/postgres.ts"
 	},
 	"scripts": {
 		"test": "sst bind vitest",
-		"typecheck": "tsc -noEmit"
+		"typecheck": "tsc -noEmit",
+		"migrate": "tsx src/migrate.ts"
 	},
 	"devDependencies": {
 		"@types/node": "^25.3.0",
@@ -17,7 +19,9 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-dynamodb": "^3.999.0",
+		"@aws-sdk/client-rds-data": "^3.1005.0",
 		"@aws-sdk/lib-dynamodb": "^3.999.0",
+		"@bridgebox/domain": "workspace:*",
 		"zod": "^4.3.6"
 	}
 }
